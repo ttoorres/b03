@@ -1,0 +1,168 @@
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+#s{background:#0d0d0d;min-height:100vh;font-family:'Courier New',monospace;color:#c8ffc8;font-size:12px;line-height:1.5;padding:12px;overflow:hidden}
+.g{color:#00ff41}.r{color:#ff3333}.y{color:#ffcc00}.w{color:#e8e8e8}.b{color:#4fc3f7}.d{color:#444}.m{color:#ff79c6}.c{color:#8be9fd}
+.err{color:#ff3333;font-weight:bold}
+#cur{display:inline-block;width:8px;height:13px;background:#00ff41;vertical-align:middle;animation:bl 0.6s step-end infinite}
+@keyframes bl{50%{opacity:0}}
+.bar-wrap{display:flex;align-items:center;gap:8px;margin:1px 0}
+.bar-bg{flex:1;height:5px;background:#1a1a1a;border-radius:2px;overflow:hidden;max-width:180px}
+.bar-f{height:100%;width:0%;border-radius:2px;transition:width 0.04s linear}
+.pct{min-width:32px;font-size:11px}
+.spinner{display:inline-block;width:10px;text-align:center}
+#warning-box{display:none;margin:16px 0;padding:10px 14px;border:1px solid #ff3333;border-radius:4px;background:#1a0000}
+#warning-box .wt{color:#ff3333;font-size:13px;font-weight:bold;margin-bottom:6px}
+#warning-box .ws{color:#aaa;font-size:11px;line-height:1.6}
+</style>
+
+<div id="s">
+<div id="lines"></div>
+<span id="cur"></span>
+<div id="warning-box">
+  <div class="wt">⚠ ALERTA DE SEGURIDAD — INTRUSIÓN DETECTADA</div>
+  <div class="ws">
+    Este dispositivo ha sido accedido de forma remota a través de NFC.<br>
+    Proceso PID 8841 activo · Conexión saliente establecida.<br>
+    Se recomienda apagar el dispositivo inmediatamente y contactar con soporte técnico.
+  </div>
+</div>
+</div>
+
+<script>
+const L = document.getElementById('lines');
+const cur = document.getElementById('cur');
+const wb = document.getElementById('warning-box');
+let q = 0;
+
+function ln(txt, cls='g', indent=0){
+  const d=document.createElement('div');
+  d.style.paddingLeft=(indent*8)+'px';
+  d.innerHTML=`<span class="${cls}">${txt}</span>`;
+  L.appendChild(d);
+  L.appendChild(cur);
+  window.scrollTo(0,9999);
+}
+
+function barLine(label, color='#00ff41', ms=600){
+  return new Promise(res=>{
+    const w=document.createElement('div');
+    w.className='bar-wrap';
+    w.innerHTML=`<span class="d">${label}</span><div class="bar-bg"><div class="bar-f" id="bf${q}" style="background:${color}"></div></div><span class="pct g" id="bp${q}">0%</span>`;
+    L.appendChild(w); L.appendChild(cur);
+    window.scrollTo(0,9999);
+    const id=q++;let p=0;
+    const iv=setInterval(()=>{
+      p+=Math.floor(Math.random()*9)+2;
+      if(p>=100)p=100;
+      document.getElementById('bf'+id).style.width=p+'%';
+      document.getElementById('bp'+id).textContent=p+'%';
+      if(p===100){clearInterval(iv);res();}
+    },ms/50);
+  });
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function rnd(arr){return arr[Math.floor(Math.random()*arr.length)]}
+
+const macs=['A4:77:F3:9C:2E:11','B8:27:EB:3F:A1:CC','DC:A6:32:7E:4B:09','F0:18:98:2D:56:E7'];
+const ips=['192.168.1.'+Math.floor(Math.random()*200+20),'10.0.0.'+Math.floor(Math.random()*50+2)];
+const procs=['com.android.systemui','WebKit::WebProcess','locationd','trustd','aggregated','mediaserverd','SpringBoard','lsd','mobileassetd'];
+const ports=[443,8443,4444,9001,1337,8080];
+
+async function run(){
+  await sleep(200);
+  ln('[*] NFC_EXPLOIT_FRAMEWORK v2.8.3 — compiled Mar 2025','d');
+  ln('[*] Authors: sec-research / 0day-labs','d');
+  await sleep(300);
+  ln('');
+  ln('[+] Dispositivo NFC detectado en rango de 4cm','g');
+  await sleep(250);
+  ln('[+] Protocolo: ISO 14443-A / NfcA','g');
+  ln('[+] ATQA: 0x0400   SAK: 0x08   UID: 04:AB:CC:12:F3:3E','b');
+  await sleep(300);
+  ln('[*] Iniciando fingerprinting del sistema operativo...','y');
+  await sleep(400);
+  ln('    └─ OS detectado: iOS 17.4.1 (build 21E236)','w',1);
+  ln('    └─ Chipset: Apple A16 Bionic','w',1);
+  ln('    └─ NFC Controller: NXP PN7150','w',1);
+  await sleep(300);
+  ln('[*] Enumerando interfaces de red...','y');
+  await sleep(350);
+  ln(`    └─ en0   (WiFi)    ${rnd(ips)}   MAC: ${rnd(macs)}`,'b',1);
+  ln('    └─ pdp_ip0 (Datos) 10.128.44.201','b',1);
+  ln(`    └─ IMEI: 35-${Math.floor(Math.random()*900000+100000)}-${Math.floor(Math.random()*900000+100000)}-${Math.floor(Math.random()*9+1)}`,'b',1);
+  await sleep(300);
+  ln('[*] Cargando módulos de explotación...','y');
+  await sleep(200);
+  ln('    └─ [OK] nfc_fuzzer.so','g',1);
+  ln('    └─ [OK] heap_spray.so','g',1);
+  ln('    └─ [OK] ndef_overflow.so','g',1);
+  ln('    └─ [OK] corenfc_hook.dylib','g',1);
+  await sleep(250);
+  ln('[+] Vulnerabilidad identificada: CVE-2024-23282 (CoreNFC)','r');
+  ln('    └─ CVSS Score: 9.1 (CRITICAL)','r',1);
+  ln('    └─ Vector: NFC→CoreNFC parser overflow → RCE','r',1);
+  await sleep(300);
+  ln('[*] Lanzando exploit...','y');
+  await sleep(500);
+  ln('    payload_stage1 ........... ENVIADO','g',1);
+  await sleep(200);
+  ln('    heap_groom ............... OK','g',1);
+  await sleep(150);
+  ln('    return_oriented_chain .... CONSTRUIDA','g',1);
+  await sleep(200);
+  ln('    shellcode_inject ......... INYECTADO','g',1);
+  await sleep(300);
+  ln('[+] Shell remota obtenida — UID=0 (root)','r');
+  await sleep(250);
+  ln('');
+  ln('[*] Iniciando extracción de datos del dispositivo...','y');
+  await sleep(300);
+  ln('    Módulo: keychain_dump','c');
+  await barLine('    iCloud credentials  ', '#00ff41', 700);
+  await barLine('    Safari passwords    ', '#00ff41', 600);
+  await barLine('    Apple Pay tokens    ', '#ff3333', 800);
+  ln('    Módulo: filesystem_grab','c');
+  await barLine('    /var/mobile/Media   ', '#00ff41', 900);
+  await barLine('    SMS database        ', '#00ff41', 500);
+  await barLine('    Location history    ', '#ffcc00', 700);
+  await barLine('    App tokens/cookies  ', '#00ff41', 600);
+  ln('');
+  ln('[*] Enumerando procesos activos...','y');
+  await sleep(200);
+  for(let i=0;i<6;i++){
+    const pid=Math.floor(Math.random()*9000+1000);
+    ln(`    PID ${pid}  ${rnd(procs)}`,'d');
+    await sleep(80);
+  }
+  await sleep(200);
+  ln('[*] Estableciendo persistencia...','y');
+  await sleep(300);
+  ln('    └─ Instalando LaunchDaemon en /Library/LaunchDaemons/','d',1);
+  ln('    └─ [OK] Daemon registrado como com.apple.diagnosticd','g',1);
+  await sleep(200);
+  ln('[*] Abriendo túnel cifrado...','y');
+  await sleep(300);
+  ln(`    └─ Conectando a 185.220.101.${Math.floor(Math.random()*200+50)}:${rnd(ports)} (TOR exit node)`,'d',1);
+  ln('    └─ Protocolo: ChaCha20-Poly1305','d',1);
+  await sleep(200);
+  ln('    └─ [OK] Túnel activo — sesión: 8xF2k9Qa','g',1);
+  await sleep(200);
+  ln('');
+  ln('[*] Transmitiendo datos extraídos...','y');
+  await barLine('    Upload total        ', '#ff3333', 1200);
+  await sleep(300);
+  ln('');
+  ln('[+] OPERACIÓN COMPLETADA','r');
+  ln(`[+] ${Math.floor(Math.random()*300+150)} archivos · ${(Math.random()*80+20).toFixed(1)} MB transmitidos`,'r');
+  ln('[+] Proceso en segundo plano activo (PID 8841)','r');
+  await sleep(400);
+  cur.style.display='none';
+  wb.style.display='block';
+  window.scrollTo(0,9999);
+}
+
+run();
+</script>
